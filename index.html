@@ -693,7 +693,7 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2));
     renderer.setSize(window.innerWidth, window.innerHeight, false);
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.08;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -776,17 +776,17 @@
     };
 
     const materials = {
-      frame: new THREE.MeshPhysicalMaterial({ color: palette.aluminum, metalness: .82, roughness: .28, clearcoat: .35, clearcoatRoughness: .3, envMapIntensity: 1.2 }),
-      louver: new THREE.MeshPhysicalMaterial({ color: palette.limestone, metalness: .62, roughness: .34, clearcoat: .25, envMapIntensity: 1.1 }),
-      dark: new THREE.MeshPhysicalMaterial({ color: 0x252a27, metalness: .78, roughness: .28 }),
-      glass: new THREE.MeshPhysicalMaterial({ color: 0xbad7e2, transmission: .88, transparent: true, opacity: .34, roughness: .08, metalness: 0, thickness: .18, ior: 1.45, envMapIntensity: 1.4, side: THREE.DoubleSide }),
-      blackGlass: new THREE.MeshPhysicalMaterial({ color: 0x1b2324, transmission: .12, transparent: true, opacity: .78, roughness: .1, metalness: .2 }),
+      frame: new THREE.MeshStandardMaterial({ color: palette.aluminum, metalness: .82, roughness: .28, envMapIntensity: 1.2 }),
+      louver: new THREE.MeshStandardMaterial({ color: palette.limestone, metalness: .62, roughness: .34, envMapIntensity: 1.1 }),
+      dark: new THREE.MeshStandardMaterial({ color: 0x252a27, metalness: .78, roughness: .28 }),
+      glass: new THREE.MeshStandardMaterial({ color: 0xbad7e2, transparent: true, opacity: .34, roughness: .08, metalness: .1, envMapIntensity: 1.4, side: THREE.DoubleSide }),
+      blackGlass: new THREE.MeshStandardMaterial({ color: 0x1b2324, transparent: true, opacity: .78, roughness: .1, metalness: .2 }),
       led: new THREE.MeshStandardMaterial({ color: 0xffd79b, emissive: 0xf3c98b, emissiveIntensity: 0 }),
-      wood: new THREE.MeshPhysicalMaterial({ color: 0x8b5f3d, roughness: .55, metalness: 0, clearcoat: .08 }),
-      fabric: new THREE.MeshPhysicalMaterial({ color: 0xd7d1c5, roughness: .88, metalness: 0 }),
+      wood: new THREE.MeshStandardMaterial({ color: 0x8b5f3d, roughness: .55, metalness: 0 }),
+      fabric: new THREE.MeshStandardMaterial({ color: 0xd7d1c5, roughness: .88, metalness: 0 }),
       soil: new THREE.MeshStandardMaterial({ color: 0x3b3027, roughness: 1 }),
       leaf: new THREE.MeshStandardMaterial({ color: 0x58634d, roughness: .82, side: THREE.DoubleSide }),
-      terracotta: new THREE.MeshPhysicalMaterial({ color: 0xb96543, roughness: .65, metalness: 0 })
+      terracotta: new THREE.MeshStandardMaterial({ color: 0xb96543, roughness: .65, metalness: 0 })
     };
 
     function roundedRectShape(w, h, r) {
