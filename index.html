@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="AEROLUME — Hệ pergola nhôm tự động và giải pháp không gian ngoài trời cao cấp tại Việt Nam." />
+  <meta name="theme-color" content="#ddd6c8" />
+  <title>AEROLUME — Automated Pergola & Outdoor Living Systems</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --limestone: #ddd6c8;
+      --limestone-light: #eee8dc;
+      --charcoal: #202521;
+      --aluminum: #8b918e;
+      --olive: #58634d;
+      --terracotta: #b96543;
+      --warm: #f3c98b;
+      --sky: #aecbd7;
+      --paper: #f4efe6;
+      --line: rgba(32, 37, 33, .18);
+      --sans: "DM Sans", Arial, sans-serif;
+      --serif: "Instrument Serif", Georgia, serif;
+      --ease: cubic-bezier(.22, 1, .36, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: auto; background: var(--limestone); }
+    body {
+      margin: 0;
+      color: var(--charcoal);
+      background: var(--limestone);
+      font-family: var(--sans);
+      overflow-x: clip;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input, select { font: inherit; }
+    button { color: inherit; }
+    a { color: inherit; text-decoration: none; }
+    ::selection { background: var(--terracotta); color: #fff; }
+
+    .scene-shell {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 1;
+      transition: opacity .8s ease;
+      overflow: hidden;
+    }
+    .scene-shell.is-hidden { opacity: 0; }
+    #three-canvas { width: 100%; height: 100%; display: block; }
+    .canvas-vignette {
+      position: absolute; inset: 0; pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(221,214,200,.96) 0%, rgba(221,214,200,.82) 34%, rgba(221,214,200,.08) 58%, rgba(221,214,200,0) 78%),
+        radial-gradient(circle at 70% 40%, transparent 0 30%, rgba(32,37,33,.05) 100%);
+      transition: background 1s ease;
+    }
+    body[data-scene="technical"] .canvas-vignette {
+      background: linear-gradient(90deg, rgba(238,232,220,.98) 0 35%, rgba(238,232,220,.55) 45%, rgba(238,232,220,0) 70%);
+    }
+    body[data-scene="weather"] .canvas-vignette,
+    body[data-scene="config"] .canvas-vignette {
+      background: linear-gradient(90deg, rgba(32,37,33,.94) 0 34%, rgba(32,37,33,.28) 51%, rgba(32,37,33,0) 75%);
+    }
+    body[data-scene="final"] .canvas-vignette {
+      background: linear-gradient(90deg, rgba(32,37,33,.84) 0 38%, rgba(32,37,33,.08) 72%, rgba(32,37,33,.24) 100%);
+    }
+
+    .page { position: relative; z-index: 2; }
+    .section { position: relative; min-height: 100vh; }
+    .container { width: min(1440px, calc(100% - 64px)); margin: 0 auto; }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 10px;
+      text-transform: uppercase; letter-spacing: .16em;
+      font-size: 11px; font-weight: 600;
+    }
+    .eyebrow::before { content: ""; width: 26px; height: 1px; background: currentColor; }
+    .display {
+      font-family: var(--serif); font-weight: 400; letter-spacing: -.04em;
+      line-height: 1.15; margin: 0;
+    }
+    .micro { font-size: 10px; text-transform: uppercase; letter-spacing: .14em; }
+
+    .site-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 30;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 28px; mix-blend-mode: multiply;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 600; letter-spacing: .22em; font-size: 14px; }
+    .brand-mark { width: 30px; height: 30px; border: 1px solid currentColor; display: grid; place-items: center; }
+    .brand-mark span { width: 12px; height: 12px; border-top: 2px solid currentColor; border-right: 2px solid currentColor; transform: rotate(-45deg); }
+    .nav-links { display: flex; gap: 24px; font-size: 12px; }
+    .nav-cta { border-bottom: 1px solid currentColor; padding-bottom: 4px; }
+
+    /* HERO */
+    .hero {
+      min-height: 100svh;
+      display: grid;
+      align-items: end;
+      padding: 96px 0 112px;
+      background: transparent;
+      overflow: hidden;
+    }
+    .hero-copy { width: min(640px, 48vw); position: relative; z-index: 4; padding-left: max(32px, calc((100vw - 1440px)/2 + 32px)); }
+    .hero-kicker { margin-bottom: 28px; }
+    .hero-title { font-size: clamp(56px, 6vw, 110px); max-width: 780px; }
+    .hero-title .line { display: block; overflow: hidden; }
+    .hero-title .line span { display: block; transform: translateY(110%); }
+    .hero-italic { font-family: var(--serif); font-style: italic; font-size: clamp(25px, 2.2vw, 38px); margin: 26px 0 18px; overflow: hidden; }
+    .hero-italic span { display: block; transform: translateY(110%); }
+    .hero-copy p { max-width: 560px; font-size: 16px; line-height: 1.65; color: rgba(32,37,33,.78); margin: 0; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+    .btn {
+      min-height: 48px; padding: 0 20px; border: 1px solid var(--charcoal); background: transparent;
+      display: inline-flex; align-items: center; justify-content: center; gap: 12px;
+      cursor: pointer; transition: transform .25s ease, background .25s ease, color .25s ease;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn.primary { background: var(--charcoal); color: var(--paper); }
+    .btn.icon::after { content: "↗"; font-size: 17px; }
+    .hero-controls {
+      position: absolute; right: 32px; bottom: 116px; z-index: 5;
+      display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+    }
+    .control-row { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; max-width: 520px; }
+    .control-btn {
+      min-height: 42px; padding: 0 14px; border: 1px solid rgba(32,37,33,.28);
+      background: rgba(238,232,220,.68); backdrop-filter: blur(12px);
+      cursor: pointer; font-size: 11px; letter-spacing: .05em; text-transform: uppercase;
+      transition: background .25s ease, color .25s ease, border-color .25s ease;
+    }
+    .control-btn:hover, .control-btn.active { background: var(--olive); color: #fff; border-color: var(--olive); }
+
+    .corner-meta { position: absolute; z-index: 4; font-size: 10px; text-transform: uppercase; letter-spacing: .12em; line-height: 1.7; }
+    .meta-top-right { top: 86px; right: 30px; text-align: right; }
+    .meta-mid-right { top: 42%; right: 30px; text-align: right; }
+    .meta-bottom-left { left: 30px; bottom: 82px; }
+    .meta-label { color: rgba(32,37,33,.48); }
+    .assembly-hud {
+      position: absolute; left: 50%; bottom: 106px; transform: translateX(-50%); z-index: 5;
+      width: min(520px, 42vw); background: rgba(238,232,220,.7); backdrop-filter: blur(16px);
+      border: 1px solid rgba(32,37,33,.16); padding: 13px 14px;
+    }
+    .assembly-hud-top { display: flex; justify-content: space-between; gap: 14px; margin-bottom: 9px; }
+    .assembly-name { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+    .assembly-percent { font-size: 11px; }
+    .progress-track { height: 3px; background: rgba(32,37,33,.14); overflow: hidden; }
+    .progress-fill { height: 100%; width: 0; background: var(--terracotta); }
+
+    .scroll-ring {
+      position: absolute; right: 32px; top: 50%; transform: translateY(-50%); z-index: 5;
+      width: 68px; height: 68px; border-radius: 50%; border: 1px solid rgba(32,37,33,.24); display: grid; place-items: center;
+    }
+    .scroll-ring::before { content: ""; position: absolute; inset: 7px; border-radius: 50%; border: 1px dashed rgba(32,37,33,.32); animation: spin 12s linear infinite; }
+    .scroll-ring span { font-size: 18px; animation: bob 1.5s ease-in-out infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes bob { 50% { transform: translateY(4px); } }
+
+    .hero-spec-strip {
+      position: absolute; left: 0; right: 0; bottom: 0; z-index: 8;
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      border-top: 1px solid rgba(32,37,33,.2); background: rgba(221,214,200,.9); backdrop-filter: blur(18px);
+    }
+    .hero-spec { padding: 16px 28px 18px; border-right: 1px solid rgba(32,37,33,.15); }
+    .hero-spec:last-child { border-right: 0; }
+    .hero-spec strong { display: block; font-family: var(--serif); font-size: 26px; font-weight: 400; }
+    .hero-spec span { font-size: 10px; letter-spacing: .11em; text-transform: uppercase; color: rgba(32,37,33,.56); }
+
+    /* SECTION 2 */
+    .exploded {
+      min-height: 170vh; color: var(--charcoal);
+      background: linear-gradient(90deg, var(--limestone-light) 0 38%, rgba(238,232,220,.62) 48%, rgba(238,232,220,0) 70%);
+    }
+    .exploded-sticky { position: sticky; top: 0; height: 100vh; display: grid; align-items: center; }
+    .exploded-copy { width: min(510px, 36vw); margin-left: max(32px, calc((100vw - 1440px)/2 + 32px)); position: relative; z-index: 5; }
+    .exploded-copy h2 { font-size: clamp(58px, 6.6vw, 112px); margin: 18px 0 24px; }
+    .exploded-copy p { max-width: 470px; color: rgba(32,37,33,.72); line-height: 1.7; }
+    .exploded-stage-labels { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+    .tech-label {
+      position: absolute; display: flex; gap: 12px; align-items: center;
+      font-size: 10px; text-transform: uppercase; letter-spacing: .13em; opacity: .25; transition: opacity .4s ease, transform .4s ease;
+    }
+    .tech-label::after { content: ""; width: clamp(60px, 10vw, 180px); height: 1px; background: currentColor; opacity: .5; }
+    .tech-label.active { opacity: 1; transform: translateX(8px); }
+    .tl-1 { top: 18%; left: 52%; }
+    .tl-2 { top: 28%; left: 68%; }
+    .tl-3 { top: 39%; left: 55%; }
+    .tl-4 { top: 49%; left: 72%; }
+    .tl-5 { top: 59%; left: 53%; }
+    .tl-6 { top: 69%; left: 68%; }
+    .tl-7 { top: 76%; left: 55%; }
+    .tl-8 { top: 85%; left: 69%; }
+    .exploded-index { display: grid; grid-template-columns: 54px 1fr; gap: 10px; margin-top: 28px; max-width: 430px; }
+    .exploded-index .num { font-family: var(--serif); font-size: 30px; color: var(--terracotta); }
+    .exploded-index strong { display: block; margin-bottom: 5px; }
+    .exploded-index small { color: rgba(32,37,33,.58); }
+
+    /* SECTION 3 */
+    .weather {
+      min-height: 120vh; color: var(--paper);
+      background: linear-gradient(90deg, rgba(32,37,33,.98) 0 38%, rgba(32,37,33,.46) 52%, rgba(32,37,33,0) 78%);
+    }
+    .weather-inner { min-height: 100vh; display: grid; align-items: center; }
+    .weather-copy { width: min(540px, 37vw); margin-left: max(32px, calc((100vw - 1440px)/2 + 32px)); position: relative; z-index: 6; }
+    .weather-copy h2 { font-size: clamp(60px, 6.8vw, 118px); margin: 18px 0 22px; }
+    .weather-copy p { color: rgba(244,239,230,.72); line-height: 1.7; }
+    .mode-tabs { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 30px; }
+    .mode-tabs button { min-height: 46px; padding: 0 16px; border: 1px solid rgba(244,239,230,.25); color: var(--paper); background: rgba(244,239,230,.06); cursor: pointer; }
+    .mode-tabs button.active { background: var(--warm); color: var(--charcoal); border-color: var(--warm); }
+    .weather-readout { margin-top: 30px; border-left: 1px solid rgba(244,239,230,.25); padding-left: 20px; display: grid; gap: 11px; }
+    .weather-readout div { display: flex; justify-content: space-between; max-width: 420px; font-size: 12px; }
+    .weather-readout span:first-child { color: rgba(244,239,230,.5); text-transform: uppercase; letter-spacing: .11em; }
+
+    /* SECTION 4 */
+    .configurator {
+      min-height: 130vh; color: var(--paper);
+      background: linear-gradient(90deg, rgba(32,37,33,.98) 0 39%, rgba(32,37,33,.42) 53%, rgba(32,37,33,0) 78%);
+    }
+    .config-wrap { width: min(1440px, calc(100% - 64px)); margin: 0 auto; padding: 110px 0 90px; display: grid; grid-template-columns: minmax(360px, 510px) 1fr; gap: 40px; position: relative; z-index: 8; }
+    .config-panel { background: rgba(32,37,33,.82); border: 1px solid rgba(244,239,230,.14); padding: 28px; backdrop-filter: blur(18px); }
+    .config-panel h2 { font-family: var(--serif); font-size: clamp(52px, 5.4vw, 90px); line-height: .9; font-weight: 400; margin: 14px 0 24px; }
+    .option-block { border-top: 1px solid rgba(244,239,230,.13); padding: 18px 0; }
+    .option-title { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 11px; text-transform: uppercase; letter-spacing: .12em; }
+    .segmented { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+    .segmented button { min-height: 44px; color: var(--paper); background: transparent; border: 1px solid rgba(244,239,230,.2); cursor: pointer; }
+    .segmented button.active { background: var(--paper); color: var(--charcoal); }
+    .swatches { display: flex; gap: 10px; }
+    .swatch { width: 40px; height: 40px; border: 1px solid rgba(255,255,255,.3); cursor: pointer; position: relative; }
+    .swatch.active::after { content: ""; position: absolute; inset: 4px; border: 1px solid white; }
+    .toggle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .toggle-line { min-height: 44px; border: 1px solid rgba(244,239,230,.17); padding: 0 12px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-size: 12px; }
+    .toggle-line input { accent-color: var(--warm); width: 18px; height: 18px; }
+    .config-summary {
+      align-self: end; justify-self: end; width: min(410px, 34vw); padding: 24px;
+      background: rgba(238,232,220,.84); color: var(--charcoal); backdrop-filter: blur(18px);
+      border-top: 4px solid var(--terracotta); margin-bottom: 40px;
+    }
+    .config-summary .big-price { font-family: var(--serif); font-size: clamp(42px, 4vw, 64px); line-height: 1; margin: 10px 0 18px; }
+    .summary-row { display: flex; justify-content: space-between; padding: 10px 0; border-top: 1px solid rgba(32,37,33,.14); font-size: 12px; }
+
+    /* SECTION 5 */
+    .applications { background: var(--paper); color: var(--charcoal); padding: 130px 0 90px; overflow: hidden; }
+    .applications-head { display: grid; grid-template-columns: 1.2fr .8fr; align-items: end; gap: 40px; margin-bottom: 70px; }
+    .applications h2 { font-size: clamp(62px, 8vw, 138px); }
+    .applications-head p { max-width: 460px; line-height: 1.7; color: rgba(32,37,33,.68); }
+    .application-reel { display: grid; gap: 18px; }
+    .app-scene {
+      min-height: 72vh; position: relative; overflow: hidden; display: flex; align-items: flex-end;
+      clip-path: inset(0 0 0 0);
+    }
+    .app-scene img { position: absolute; inset: -8%; width: 116%; height: 116%; object-fit: cover; filter: saturate(.75) contrast(1.04); }
+    .app-scene::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 38%, rgba(18,23,19,.75)); }
+    .app-copy { position: relative; z-index: 2; color: #fff; width: 100%; display: grid; grid-template-columns: 1fr 1fr auto; align-items: end; gap: 24px; padding: 36px; }
+    .app-copy .index { font-family: var(--serif); font-size: 26px; }
+    .app-copy h3 { font-family: var(--serif); font-size: clamp(44px, 6vw, 92px); line-height: .9; margin: 0; font-weight: 400; }
+    .app-copy p { max-width: 330px; margin: 0; color: rgba(255,255,255,.78); line-height: 1.6; }
+    .app-arrow { width: 60px; height: 60px; border-radius: 50%; border: 1px solid rgba(255,255,255,.6); display: grid; place-items: center; font-size: 24px; }
+
+    /* SECTION 6 */
+    .engineering { background: var(--limestone); padding: 130px 0; overflow: hidden; }
+    .engineering-head { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: end; margin-bottom: 100px; }
+    .engineering h2 { font-size: clamp(62px, 7.2vw, 126px); }
+    .engineering-head p { max-width: 520px; line-height: 1.75; color: rgba(32,37,33,.68); }
+    .performance-map { position: relative; min-height: 800px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .perf-orbit { position: absolute; left: 50%; top: 50%; width: min(54vw, 700px); aspect-ratio: 1; transform: translate(-50%,-50%); border: 1px solid var(--line); border-radius: 50%; }
+    .perf-orbit::before, .perf-orbit::after { content: ""; position: absolute; border-radius: 50%; border: 1px solid var(--line); }
+    .perf-orbit::before { inset: 13%; }
+    .perf-orbit::after { inset: 30%; }
+    .perf-core { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); text-align: center; }
+    .perf-core strong { font-family: var(--serif); font-size: 86px; font-weight: 400; display: block; }
+    .perf-core span { font-size: 10px; text-transform: uppercase; letter-spacing: .12em; }
+    .perf-item { position: absolute; width: min(300px, 24vw); }
+    .perf-item h3 { font-family: var(--serif); font-size: 36px; font-weight: 400; margin: 0 0 8px; }
+    .perf-item p { font-size: 12px; color: rgba(32,37,33,.62); line-height: 1.5; }
+    .perf-bar { height: 4px; background: rgba(32,37,33,.12); margin-top: 15px; overflow: hidden; }
+    .perf-bar span { display: block; height: 100%; background: var(--terracotta); width: 0; }
+    .pi-1 { left: 0; top: 11%; }
+    .pi-2 { right: 0; top: 11%; }
+    .pi-3 { left: 2%; bottom: 12%; }
+    .pi-4 { right: 2%; bottom: 12%; }
+    .pi-5 { left: 50%; top: 2%; transform: translateX(-50%); text-align: center; }
+    .pi-6 { left: 50%; bottom: 2%; transform: translateX(-50%); text-align: center; }
+
+    /* SECTION 7 */
+    .estimator { background: var(--olive); color: var(--paper); padding: 130px 0; }
+    .estimate-layout { display: grid; grid-template-columns: .78fr 1.22fr; gap: 6vw; }
+    .estimate-intro { position: sticky; top: 110px; align-self: start; }
+    .estimate-intro h2 { font-size: clamp(62px, 7.4vw, 124px); margin: 16px 0 24px; }
+    .estimate-intro p { max-width: 440px; line-height: 1.7; color: rgba(244,239,230,.72); }
+    .estimate-form { border-top: 1px solid rgba(244,239,230,.24); }
+    .form-row { display: grid; grid-template-columns: 220px 1fr; gap: 30px; padding: 24px 0; border-bottom: 1px solid rgba(244,239,230,.2); align-items: center; }
+    .form-row label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: rgba(244,239,230,.65); }
+    .form-row select, .form-row input {
+      width: 100%; min-height: 48px; border: 0; border-bottom: 1px solid rgba(244,239,230,.45);
+      background: transparent; color: #fff; border-radius: 0; outline: none;
+    }
+    .form-row option { color: var(--charcoal); }
+    .check-choices { display: flex; flex-wrap: wrap; gap: 9px; }
+    .check-chip { border: 1px solid rgba(244,239,230,.28); padding: 12px 14px; display: flex; gap: 10px; align-items: center; cursor: pointer; }
+    .check-chip input { width: 16px; min-height: auto; accent-color: var(--warm); }
+    .estimate-output { margin-top: 34px; padding: 28px; background: var(--paper); color: var(--charcoal); display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 24px; }
+    .estimate-output .range { font-family: var(--serif); font-size: clamp(48px, 6vw, 92px); line-height: .9; margin-top: 10px; }
+    .estimate-note { font-size: 11px; color: rgba(32,37,33,.58); max-width: 500px; line-height: 1.6; margin-top: 16px; }
+
+    /* SECTION 8 */
+    .final-cta { min-height: 100svh; color: var(--paper); display: flex; align-items: flex-end; padding: 110px 0 70px; background: transparent; overflow: hidden; }
+    .final-cta::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(32,37,33,.08), rgba(32,37,33,.72)); z-index: 1; pointer-events: none; }
+    .final-inner { position: relative; z-index: 4; width: min(1440px, calc(100% - 64px)); margin: 0 auto; display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 40px; }
+    .final-cta h2 { font-size: clamp(80px, 11vw, 190px); max-width: 1080px; }
+    .final-cta .btn { border-color: rgba(255,255,255,.7); background: var(--warm); color: var(--charcoal); min-height: 58px; padding: 0 24px; }
+    .final-footer { position: absolute; z-index: 5; bottom: 18px; left: 32px; right: 32px; display: flex; justify-content: space-between; font-size: 10px; text-transform: uppercase; letter-spacing: .12em; color: rgba(255,255,255,.68); }
+
+    .three-warning {
+      position: fixed; inset: auto 18px 18px 18px; z-index: 99; background: #7b2f24; color: #fff; padding: 14px 16px; display: none;
+      font-size: 13px; line-height: 1.5;
+    }
+
+    @media (max-width: 980px) {
+      .container, .config-wrap, .final-inner { width: min(100% - 36px, 900px); }
+      .nav-links { display: none; }
+      .hero { padding-top: 102px; align-items: start; }
+      .hero-copy { width: 78vw; padding-left: 18px; padding-top: 42px; }
+      .hero-title { font-size: clamp(48px, 9vw, 84px); }
+      .canvas-vignette { background: linear-gradient(180deg, rgba(221,214,200,.98) 0 41%, rgba(221,214,200,.5) 58%, rgba(221,214,200,0) 78%); }
+      .hero-controls { left: 18px; right: 18px; bottom: 126px; align-items: flex-start; }
+      .control-row { justify-content: flex-start; max-width: 100%; }
+      .assembly-hud { left: auto; right: 18px; bottom: 126px; transform: none; width: 320px; }
+      .corner-meta, .scroll-ring { display: none; }
+      .hero-spec { padding: 13px 14px; }
+      .hero-spec strong { font-size: 21px; }
+      .exploded-copy, .weather-copy { width: 46vw; margin-left: 24px; }
+      .config-wrap { grid-template-columns: minmax(330px, 440px) 1fr; }
+      .config-summary { width: 340px; }
+      .applications-head, .engineering-head, .estimate-layout { grid-template-columns: 1fr; }
+      .application-reel { gap: 12px; }
+      .perf-item { width: 250px; }
+      .estimate-intro { position: relative; top: auto; }
+    }
+
+    @media (max-width: 720px) {
+      .site-nav { padding: 14px 16px; }
+      .brand { font-size: 12px; }
+      .scene-shell { position: fixed; }
+      .hero { min-height: 920px; padding-bottom: 210px; }
+      .hero-copy { width: auto; padding: 76px 16px 0; }
+      .hero-title { font-size: clamp(34px, 11vw, 60px); max-width: 100%; letter-spacing: -.055em; }
+      .hero-copy p { font-size: 14px; max-width: 92%; }
+      .hero-actions { gap: 8px; }
+      .btn { min-height: 46px; padding: 0 14px; font-size: 12px; }
+      .canvas-vignette { background: linear-gradient(180deg, rgba(221,214,200,.99) 0 44%, rgba(221,214,200,.72) 58%, rgba(221,214,200,.08) 78%, rgba(221,214,200,0)); }
+      .hero-controls { bottom: 122px; }
+      .control-row:nth-child(2) { overflow-x: auto; flex-wrap: nowrap; width: 100%; padding-bottom: 4px; }
+      .control-btn { flex: 0 0 auto; min-height: 44px; }
+      .assembly-hud { left: 16px; right: 16px; bottom: 178px; width: auto; }
+      .hero-spec-strip { grid-template-columns: 1fr 1fr; }
+      .hero-spec { border-bottom: 1px solid rgba(32,37,33,.14); }
+      .exploded { min-height: 150vh; background: linear-gradient(180deg, var(--limestone-light) 0 45%, rgba(238,232,220,.5) 62%, rgba(238,232,220,0) 82%); }
+      .exploded-sticky { align-items: start; padding-top: 96px; }
+      .exploded-copy, .weather-copy { width: auto; margin: 0; padding: 0 18px; }
+      .exploded-copy h2, .weather-copy h2 { font-size: clamp(54px, 17vw, 82px); }
+      .exploded-copy p, .weather-copy p { max-width: 92%; }
+      .exploded-stage-labels { display: none; }
+      .weather { min-height: 110vh; background: linear-gradient(180deg, rgba(32,37,33,.98) 0 48%, rgba(32,37,33,.58) 67%, rgba(32,37,33,0) 88%); }
+      .weather-inner { align-items: start; padding-top: 100px; }
+      .mode-tabs { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 6px; }
+      .mode-tabs button { flex: 0 0 auto; min-height: 44px; }
+      .configurator { background: linear-gradient(180deg, rgba(32,37,33,.99) 0 63%, rgba(32,37,33,.42) 80%, rgba(32,37,33,0)); }
+      .config-wrap { width: 100%; padding: 92px 16px 220px; display: block; }
+      .config-panel { padding: 20px; }
+      .config-panel h2 { font-size: 62px; }
+      .config-summary { position: absolute; left: 16px; right: 16px; bottom: 24px; width: auto; margin: 0; }
+      .toggle-grid { grid-template-columns: 1fr; }
+      .applications, .engineering, .estimator { padding: 96px 0; }
+      .applications-head { margin-bottom: 44px; }
+      .app-scene { min-height: 76vh; }
+      .app-copy { grid-template-columns: 1fr auto; padding: 20px; }
+      .app-copy p { grid-column: 1 / -1; }
+      .performance-map { min-height: 980px; }
+      .perf-orbit { width: 82vw; }
+      .perf-item { position: relative; inset: auto !important; transform: none !important; width: 100%; padding: 20px 0; border-top: 1px solid var(--line); }
+      .perf-orbit, .perf-core { display: none; }
+      .form-row { grid-template-columns: 1fr; gap: 10px; }
+      .estimate-output { grid-template-columns: 1fr; }
+      .final-cta { min-height: 900px; }
+      .final-inner { grid-template-columns: 1fr; }
+      .final-cta h2 { font-size: clamp(68px, 20vw, 110px); }
+      .final-footer { left: 16px; right: 16px; gap: 16px; flex-wrap: wrap; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body data-scene="hero">
+  <div class="scene-shell" id="sceneShell" aria-hidden="true">
+    <canvas id="three-canvas"></canvas>
+    <div class="canvas-vignette"></div>
+  </div>
+
+  <nav class="site-nav" aria-label="Điều hướng chính">
+    <a class="brand" href="#hero"><span class="brand-mark"><span></span></span>AEROLUME</a>
+    <div class="nav-links">
+      <a href="#system">Hệ kết cấu</a>
+      <a href="#weather">Mô phỏng thời tiết</a>
+      <a href="#configurator">Cấu hình</a>
+      <a href="#estimate">Dự toán</a>
+    </div>
+    <a class="nav-cta" href="#estimate">Đặt lịch khảo sát</a>
+  </nav>
+
+  <main class="page">
+    <section class="section hero" id="hero">
+      <div class="hero-copy">
+        <div class="eyebrow hero-kicker">Automated outdoor architecture</div>
+        <h1 class="display hero-title" aria-label="Build the space between indoors and sky.">
+          <span class="line"><span>BUILD THE SPACE</span></span>
+          <span class="line"><span>BETWEEN INDOORS</span></span>
+          <span class="line"><span>AND SKY.</span></span>
+        </h1>
+        <div class="hero-italic"><span>Open-air living, engineered.</span></div>
+        <p>Hệ pergola nhôm tự động được thiết kế để biến sân vườn, rooftop và khoảng hiên thành không gian sống linh hoạt trong mọi điều kiện thời tiết.</p>
+        <div class="hero-actions">
+          <a class="btn primary icon" href="#system">Khám phá hệ pergola</a>
+          <a class="btn" href="#estimate">Nhận dự toán công trình</a>
+        </div>
+      </div>
+
+      <div class="corner-meta meta-top-right"><span class="meta-label">System</span><br>AL-240 Bioclimatic</div>
+      <div class="corner-meta meta-mid-right">
+        <span class="meta-label">Roof status</span> <strong id="roofStatus">Open</strong><br>
+        <span class="meta-label">Weather mode</span> <strong id="weatherStatus">Clear</strong><br>
+        <span class="meta-label">Wind sensor</span> <strong>Active</strong>
+      </div>
+      <div class="corner-meta meta-bottom-left"><span class="meta-label">Assembly</span><br><strong id="metaAssembly">0%</strong></div>
+
+      <div class="assembly-hud" id="assemblyHud">
+        <div class="assembly-hud-top"><span class="assembly-name" id="assemblyName">Initializing system</span><span class="assembly-percent" id="assemblyPercent">0%</span></div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+
+      <div class="hero-controls">
+        <div class="control-row">
+          <button class="control-btn" id="replayBtn">Replay Assembly</button>
+          <button class="control-btn" id="explodeBtn">Exploded View</button>
+          <button class="control-btn" id="louverBtn">Open / Close Louvers</button>
+        </div>
+        <div class="control-row" aria-label="Chế độ môi trường">
+          <button class="control-btn env-btn active" data-mode="day">Day</button>
+          <button class="control-btn env-btn" data-mode="sunset">Sunset</button>
+          <button class="control-btn env-btn" data-mode="rain">Rain</button>
+        </div>
+      </div>
+
+      <div class="scroll-ring" aria-hidden="true"><span>↓</span></div>
+
+      <div class="hero-spec-strip">
+        <div class="hero-spec"><strong>6.5 m</strong><span>Maximum span</span></div>
+        <div class="hero-spec"><strong>120 km/h</strong><span>Wind resistance</span></div>
+        <div class="hero-spec"><strong>0–135°</strong><span>Louver rotation</span></div>
+        <div class="hero-spec"><strong>20–35 ngày</strong><span>Installation time</span></div>
+      </div>
+    </section>
+
+    <section class="section exploded" id="system">
+      <div class="exploded-sticky">
+        <div class="exploded-copy">
+          <div class="eyebrow">01 / Structural anatomy</div>
+          <h2 class="display">MỘT HỆ<br>KIẾN TRÚC.<br>NHIỀU LỚP.</h2>
+          <p>Mỗi chi tiết được thiết kế như một phần của tổng thể: chịu lực, thoát nước, điều khiển khí hậu và ánh sáng. Cuộn trang để tách từng lớp kết cấu trong không gian.</p>
+          <div class="exploded-index">
+            <div class="num" id="explodeIndex">01</div>
+            <div><strong id="explodeTitle">Foundation & columns</strong><small id="explodeDesc">Bản mã liên kết nền và hệ trụ nhôm định hình chịu lực.</small></div>
+          </div>
+        </div>
+        <div class="exploded-stage-labels" aria-hidden="true">
+          <div class="tech-label tl-1">Foundation plates</div>
+          <div class="tech-label tl-2">Structural columns</div>
+          <div class="tech-label tl-3">Primary frame</div>
+          <div class="tech-label tl-4">Rotating louvers</div>
+          <div class="tech-label tl-5">Motor drive</div>
+          <div class="tech-label tl-6">Rain gutters</div>
+          <div class="tech-label tl-7">Sliding glass walls</div>
+          <div class="tech-label tl-8">Integrated lighting</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section weather" id="weather">
+      <div class="weather-inner">
+        <div class="weather-copy">
+          <div class="eyebrow">02 / Climate response</div>
+          <h2 class="display">KHÔNG GIAN<br>BIẾT THÍCH ỨNG.</h2>
+          <p>Điều khiển mái xoay, vách kính, ánh sáng và cảm biến theo điều kiện thực tế. Hệ thống ưu tiên sự thoải mái nhưng vẫn bảo vệ công trình khi mưa lớn hoặc gió mạnh.</p>
+          <div class="mode-tabs" id="weatherTabs">
+            <button class="active" data-mode="day">Sunny</button>
+            <button data-mode="sunset">Sunset</button>
+            <button data-mode="rain">Rain</button>
+            <button data-mode="wind">Strong wind</button>
+            <button data-mode="night">Night</button>
+          </div>
+          <div class="weather-readout">
+            <div><span>Roof angle</span><strong id="roofAngleReadout">68°</strong></div>
+            <div><span>Glass walls</span><strong id="glassReadout">Open</strong></div>
+            <div><span>Wind load</span><strong id="windReadout">8 km/h</strong></div>
+            <div><span>LED scene</span><strong id="ledReadout">Off</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section configurator" id="configurator">
+      <div class="config-wrap">
+        <div class="config-panel">
+          <div class="eyebrow">03 / Live configurator</div>
+          <h2>THIẾT KẾ<br>CHO ĐÚNG<br>CÔNG TRÌNH.</h2>
+
+          <div class="option-block">
+            <div class="option-title"><span>Kích thước</span><span id="sizeLabel">4 × 6 m</span></div>
+            <div class="segmented" id="sizeOptions">
+              <button data-size="3x3">3 × 3</button>
+              <button class="active" data-size="4x6">4 × 6</button>
+              <button data-size="6x8">6 × 8</button>
+            </div>
+          </div>
+
+          <div class="option-block">
+            <div class="option-title"><span>Màu khung</span><span id="frameColorLabel">Matte aluminum</span></div>
+            <div class="swatches" id="frameSwatches">
+              <button class="swatch active" data-color="aluminum" data-label="Matte aluminum" style="background:#8b918e" aria-label="Matte aluminum"></button>
+              <button class="swatch" data-color="charcoal" data-label="Architectural charcoal" style="background:#303431" aria-label="Architectural charcoal"></button>
+              <button class="swatch" data-color="olive" data-label="Olive bronze" style="background:#58634d" aria-label="Olive bronze"></button>
+              <button class="swatch" data-color="sand" data-label="Warm sand" style="background:#b9aa91" aria-label="Warm sand"></button>
+            </div>
+          </div>
+
+          <div class="option-block">
+            <div class="option-title"><span>Màu lá mái</span><span id="louverColorLabel">Soft limestone</span></div>
+            <div class="swatches" id="louverSwatches">
+              <button class="swatch active" data-color="limestone" data-label="Soft limestone" style="background:#c8c1b3" aria-label="Soft limestone"></button>
+              <button class="swatch" data-color="aluminum" data-label="Silver gray" style="background:#8b918e" aria-label="Silver gray"></button>
+              <button class="swatch" data-color="charcoal" data-label="Charcoal" style="background:#303431" aria-label="Charcoal"></button>
+            </div>
+          </div>
+
+          <div class="option-block">
+            <div class="option-title"><span>Tùy chọn tích hợp</span><span>Live update</span></div>
+            <div class="toggle-grid" id="featureOptions">
+              <label class="toggle-line">Vách kính <input type="checkbox" data-feature="glass" checked></label>
+              <label class="toggle-line">LED tuyến tính <input type="checkbox" data-feature="led" checked></label>
+              <label class="toggle-line">Bếp ngoài trời <input type="checkbox" data-feature="kitchen"></label>
+              <label class="toggle-line">Rèm hông <input type="checkbox" data-feature="blinds"></label>
+              <label class="toggle-line">Cảm biến mưa <input type="checkbox" data-feature="rainSensor" checked></label>
+              <label class="toggle-line">Cảm biến gió <input type="checkbox" data-feature="windSensor" checked></label>
+            </div>
+          </div>
+        </div>
+
+        <aside class="config-summary" aria-live="polite">
+          <div class="micro">Estimated configuration</div>
+          <div class="big-price" id="configPrice">420–520 triệu</div>
+          <div class="summary-row"><span>Kích thước</span><strong id="summarySize">4 × 6 m</strong></div>
+          <div class="summary-row"><span>Diện tích</span><strong id="summaryArea">24 m²</strong></div>
+          <div class="summary-row"><span>Dòng sản phẩm</span><strong id="summaryType">AL-240 Villa</strong></div>
+          <div class="summary-row"><span>Thi công dự kiến</span><strong id="summaryTime">24–30 ngày</strong></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section applications" id="applications">
+      <div class="container">
+        <div class="applications-head">
+          <div>
+            <div class="eyebrow">04 / Architectural applications</div>
+            <h2 class="display">TỪ SÂN VƯỜN<br>ĐẾN ĐƯỜNG CHÂN TRỜI.</h2>
+          </div>
+          <p>AEROLUME được cấu hình theo bối cảnh sử dụng, tải trọng công trình và ngôn ngữ kiến trúc — không áp một module giống nhau cho mọi dự án.</p>
+        </div>
+      </div>
+      <div class="application-reel">
+        <article class="app-scene">
+          <img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=2200&q=88" alt="Sân vườn biệt thự hiện đại" loading="lazy">
+          <div class="app-copy"><div class="index">01</div><div><h3>Villa Garden</h3><p>Mở rộng phòng khách ra khu vườn, tạo vùng chuyển tiếp có mái che linh hoạt và ánh sáng ấm.</p></div><div class="app-arrow">↗</div></div>
+        </article>
+        <article class="app-scene">
+          <img src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=2200&q=88" alt="Sân hiên khu nghỉ dưỡng" loading="lazy">
+          <div class="app-copy"><div class="index">02</div><div><h3>Resort Terrace</h3><p>Tăng số giờ khai thác không gian ngoài trời cho resort, beach club và khu dịch vụ cao cấp.</p></div><div class="app-arrow">↗</div></div>
+        </article>
+        <article class="app-scene">
+          <img src="https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=2200&q=88" alt="Nhà hàng rooftop" loading="lazy">
+          <div class="app-copy"><div class="index">03</div><div><h3>Rooftop Restaurant</h3><p>Kiểm soát nắng, mưa và gió để vận hành ổn định mà vẫn giữ trọn tầm nhìn thành phố.</p></div><div class="app-arrow">↗</div></div>
+        </article>
+        <article class="app-scene">
+          <img src="https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=2200&q=88" alt="Khu lounge bên hồ bơi" loading="lazy">
+          <div class="app-copy"><div class="index">04</div><div><h3>Poolside Lounge</h3><p>Tạo vùng nghỉ mát có kiểm soát bóng râm, tích hợp rèm hông và ánh sáng dùng cho buổi tối.</p></div><div class="app-arrow">↗</div></div>
+        </article>
+        <article class="app-scene">
+          <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=2200&q=88" alt="Không gian quán cà phê cao cấp" loading="lazy">
+          <div class="app-copy"><div class="index">05</div><div><h3>Luxury Café</h3><p>Biến khoảng hiên thành khu vực doanh thu cao, vận hành được cả giữa trưa, mưa nhẹ và ban đêm.</p></div><div class="app-arrow">↗</div></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section engineering" id="engineering">
+      <div class="container">
+        <div class="engineering-head">
+          <div>
+            <div class="eyebrow">05 / Engineering performance</div>
+            <h2 class="display">ĐẸP TRONG TĨNH.<br>MẠNH TRONG GIÓ.</h2>
+          </div>
+          <p>Hiệu năng được đo từ kết cấu, khả năng thoát nước, truyền nhiệt, độ bền lớp phủ đến chu kỳ vận hành của motor. AEROLUME thiết kế theo điều kiện khí hậu nóng ẩm và mưa lớn tại Việt Nam.</p>
+        </div>
+
+        <div class="performance-map">
+          <div class="perf-orbit"></div>
+          <div class="perf-core"><strong>AL-240</strong><span>Bioclimatic system</span></div>
+          <div class="perf-item pi-1"><h3>120 km/h</h3><p>Khả năng chịu gió thiết kế với liên kết nền phù hợp.</p><div class="perf-bar"><span data-width="92%"></span></div></div>
+          <div class="perf-item pi-2"><h3>65 L/min</h3><p>Lưu lượng thoát nước qua máng ẩn và trụ dẫn nước.</p><div class="perf-bar"><span data-width="86%"></span></div></div>
+          <div class="perf-item pi-3"><h3>−12°C</h3><p>Mức giảm nhiệt bề mặt cảm nhận khi đóng mái và tạo bóng râm.</p><div class="perf-bar"><span data-width="78%"></span></div></div>
+          <div class="perf-item pi-4"><h3>99%</h3><p>Khả năng cản tia UV khi hệ mái ở trạng thái bảo vệ.</p><div class="perf-bar"><span data-width="99%"></span></div></div>
+          <div class="perf-item pi-5"><h3>6063-T6</h3><p>Nhôm kiến trúc xử lý bề mặt cho môi trường ngoài trời.</p><div class="perf-bar"><span data-width="94%"></span></div></div>
+          <div class="perf-item pi-6"><h3>30.000+</h3><p>Chu kỳ đóng mở motor trong điều kiện vận hành tiêu chuẩn.</p><div class="perf-bar"><span data-width="90%"></span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section estimator" id="estimate">
+      <div class="container estimate-layout">
+        <div class="estimate-intro">
+          <div class="eyebrow">06 / Project estimate builder</div>
+          <h2 class="display">ƯỚC TÍNH<br>PHẠM VI<br>ĐẦU TƯ.</h2>
+          <p>Chọn nhu cầu cơ bản để nhận khoảng ngân sách sơ bộ. Báo giá chính thức được xác nhận sau khảo sát hiện trạng, tải trọng, hệ điện và điều kiện thi công.</p>
+        </div>
+
+        <form class="estimate-form" id="estimateForm" onsubmit="return false;">
+          <div class="form-row"><label for="projectType">Loại công trình</label><select id="projectType"><option value="villa">Biệt thự / nhà ở</option><option value="cafe">Nhà hàng / café</option><option value="resort">Resort / dự án thương mại</option></select></div>
+          <div class="form-row"><label for="estimateSize">Kích thước pergola</label><select id="estimateSize"><option value="small">3 × 3 m</option><option value="medium" selected>4 × 6 m</option><option value="large">6 × 8 m</option></select></div>
+          <div class="form-row"><label for="glassWalls">Số mặt vách kính</label><select id="glassWalls"><option value="0">Không sử dụng</option><option value="1">1 mặt</option><option value="2" selected>2 mặt</option><option value="3">3 mặt</option><option value="4">4 mặt</option></select></div>
+          <div class="form-row"><label for="lightingPackage">Gói ánh sáng</label><select id="lightingPackage"><option value="none">Không LED</option><option value="basic" selected>LED tuyến tính cơ bản</option><option value="scene">LED scene + dimming</option></select></div>
+          <div class="form-row"><label for="sensorPackage">Gói cảm biến</label><select id="sensorPackage"><option value="basic">Cảm biến mưa</option><option value="full" selected>Mưa + gió + nhiệt độ</option></select></div>
+          <div class="form-row"><label>Tùy chọn bổ sung</label><div class="check-choices"><label class="check-chip"><input type="checkbox" id="estimateKitchen"> Bếp ngoài trời</label><label class="check-chip"><input type="checkbox" id="estimateBlinds"> Rèm hông tự động</label></div></div>
+          <div class="form-row"><label for="location">Khu vực lắp đặt</label><select id="location"><option value="central">Đà Nẵng / miền Trung</option><option value="south">TP.HCM / miền Nam</option><option value="north">Hà Nội / miền Bắc</option><option value="island">Đảo / khu vực khó vận chuyển</option></select></div>
+
+          <div class="estimate-output" aria-live="polite">
+            <div><div class="micro">Estimated investment range</div><div class="range" id="estimateRange">380–560 triệu</div><p class="estimate-note">Khoảng giá chỉ dùng để định hướng trước khảo sát. Chưa bao gồm xử lý kết cấu đặc biệt, móng gia cường, vận chuyển đặc thù và hạng mục nội thất rời.</p></div>
+            <a class="btn primary icon" href="mailto:hello@aerolume.vn?subject=Yêu cầu khảo sát công trình AEROLUME">Gửi yêu cầu khảo sát</a>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section class="section final-cta" id="contact">
+      <div class="final-inner">
+        <div>
+          <div class="eyebrow">AEROLUME / Vietnam</div>
+          <h2 class="display">LIVE OUTSIDE.<br>WITHOUT LIMITS.</h2>
+        </div>
+        <a class="btn icon" href="mailto:hello@aerolume.vn?subject=Đặt lịch khảo sát công trình">Đặt lịch khảo sát công trình</a>
+      </div>
+      <div class="final-footer"><span>Đà Nẵng · Hà Nội · TP.HCM</span><span>hello@aerolume.vn · +84 888 240 240</span><span>© 2026 AEROLUME</span></div>
+    </section>
+  </main>
+
+  <div class="three-warning" id="threeWarning">Không thể tải Three.js. Vui lòng kiểm tra kết nối Internet hoặc thử tải lại trang.</div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.1/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script>
+  (() => {
+    'use strict';
+
+    const warning = document.getElementById('threeWarning');
+    if (!window.THREE || !window.gsap || !window.ScrollTrigger) {
+      warning.style.display = 'block';
+      return;
+    }
+
+    gsap.registerPlugin(ScrollTrigger);
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isMobile = window.matchMedia('(max-width: 720px)').matches;
+
+    const canvas = document.getElementById('three-canvas');
+    const sceneShell = document.getElementById('sceneShell');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xddd6c8);
+    scene.fog = new THREE.FogExp2(0xddd6c8, 0.018);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: !isMobile, alpha: false, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2));
+    renderer.setSize(window.innerWidth, window.innerHeight, false);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.08;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+    const camera = new THREE.PerspectiveCamera(34, window.innerWidth / window.innerHeight, 0.1, 180);
+    const cameraTarget = new THREE.Vector3(1.7, 2.2, 0);
+    camera.position.set(isMobile ? 11.8 : 12.8, isMobile ? 8.4 : 7.2, isMobile ? 15.6 : 17.5);
+    camera.lookAt(cameraTarget);
+
+    function makeEnvironmentTexture() {
+      const c = document.createElement('canvas');
+      c.width = 1024; c.height = 512;
+      const x = c.getContext('2d');
+      const g = x.createLinearGradient(0, 0, 0, c.height);
+      g.addColorStop(0, '#9ec5d6');
+      g.addColorStop(.38, '#e9d6b7');
+      g.addColorStop(.62, '#d7c8aa');
+      g.addColorStop(1, '#727c65');
+      x.fillStyle = g; x.fillRect(0, 0, c.width, c.height);
+      const sun = x.createRadialGradient(760, 235, 0, 760, 235, 130);
+      sun.addColorStop(0, 'rgba(255,242,195,.96)');
+      sun.addColorStop(.2, 'rgba(243,201,139,.6)');
+      sun.addColorStop(1, 'rgba(243,201,139,0)');
+      x.fillStyle = sun; x.fillRect(0, 0, c.width, c.height);
+      const t = new THREE.CanvasTexture(c);
+      t.mapping = THREE.EquirectangularReflectionMapping;
+      t.colorSpace = THREE.SRGBColorSpace;
+      return t;
+    }
+    scene.environment = makeEnvironmentTexture();
+
+    const hemi = new THREE.HemisphereLight(0xdceaf0, 0x4b5148, 2.1);
+    scene.add(hemi);
+    const sunLight = new THREE.DirectionalLight(0xffe0b1, 4.2);
+    sunLight.position.set(9, 13, 8);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.set(isMobile ? 512 : 1024, isMobile ? 512 : 1024);
+    sunLight.shadow.camera.left = -15; sunLight.shadow.camera.right = 15;
+    sunLight.shadow.camera.top = 15; sunLight.shadow.camera.bottom = -15;
+    sunLight.shadow.bias = -0.00025;
+    scene.add(sunLight);
+
+    const warmPoint = new THREE.PointLight(0xf3c98b, 0, 20, 2);
+    warmPoint.position.set(0, 3, 0);
+    warmPoint.castShadow = true;
+    scene.add(warmPoint);
+
+    const rim = new THREE.DirectionalLight(0xaecbd7, 1.5);
+    rim.position.set(-10, 8, -8);
+    scene.add(rim);
+
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(80, 80),
+      new THREE.MeshPhysicalMaterial({ color: 0xcfc6b5, roughness: .9, metalness: 0 })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -0.04;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    const contact = new THREE.Mesh(
+      new THREE.CircleGeometry(10, 64),
+      new THREE.MeshBasicMaterial({ color: 0x242822, transparent: true, opacity: .12, depthWrite: false })
+    );
+    contact.rotation.x = -Math.PI / 2;
+    contact.position.y = .005;
+    contact.scale.set(1.7, .72, 1);
+    scene.add(contact);
+
+    const model = new THREE.Group();
+    model.position.set(3.2, 0, 0);
+    scene.add(model);
+
+    const palette = {
+      aluminum: 0x8b918e,
+      charcoal: 0x303431,
+      olive: 0x58634d,
+      sand: 0xb9aa91,
+      limestone: 0xc8c1b3
+    };
+
+    const materials = {
+      frame: new THREE.MeshPhysicalMaterial({ color: palette.aluminum, metalness: .82, roughness: .28, clearcoat: .35, clearcoatRoughness: .3, envMapIntensity: 1.2 }),
+      louver: new THREE.MeshPhysicalMaterial({ color: palette.limestone, metalness: .62, roughness: .34, clearcoat: .25, envMapIntensity: 1.1 }),
+      dark: new THREE.MeshPhysicalMaterial({ color: 0x252a27, metalness: .78, roughness: .28 }),
+      glass: new THREE.MeshPhysicalMaterial({ color: 0xbad7e2, transmission: .88, transparent: true, opacity: .34, roughness: .08, metalness: 0, thickness: .18, ior: 1.45, envMapIntensity: 1.4, side: THREE.DoubleSide }),
+      blackGlass: new THREE.MeshPhysicalMaterial({ color: 0x1b2324, transmission: .12, transparent: true, opacity: .78, roughness: .1, metalness: .2 }),
+      led: new THREE.MeshStandardMaterial({ color: 0xffd79b, emissive: 0xf3c98b, emissiveIntensity: 0 }),
+      wood: new THREE.MeshPhysicalMaterial({ color: 0x8b5f3d, roughness: .55, metalness: 0, clearcoat: .08 }),
+      fabric: new THREE.MeshPhysicalMaterial({ color: 0xd7d1c5, roughness: .88, metalness: 0 }),
+      soil: new THREE.MeshStandardMaterial({ color: 0x3b3027, roughness: 1 }),
+      leaf: new THREE.MeshStandardMaterial({ color: 0x58634d, roughness: .82, side: THREE.DoubleSide }),
+      terracotta: new THREE.MeshPhysicalMaterial({ color: 0xb96543, roughness: .65, metalness: 0 })
+    };
+
+    function roundedRectShape(w, h, r) {
+      const s = new THREE.Shape();
+      const x = -w / 2, y = -h / 2;
+      s.moveTo(x + r, y);
+      s.lineTo(x + w - r, y);
+      s.quadraticCurveTo(x + w, y, x + w, y + r);
+      s.lineTo(x + w, y + h - r);
+      s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      s.lineTo(x + r, y + h);
+      s.quadraticCurveTo(x, y + h, x, y + h - r);
+      s.lineTo(x, y + r);
+      s.quadraticCurveTo(x, y, x + r, y);
+      return s;
+    }
+
+    function roundedBox(w, h, d, r, mat) {
+      const shape = roundedRectShape(w, h, Math.min(r, w * .25, h * .25));
+      const geo = new THREE.ExtrudeGeometry(shape, { depth: d, bevelEnabled: true, bevelSegments: 1, steps: 1, bevelSize: Math.min(r * .45, .07), bevelThickness: Math.min(r * .45, .07), curveSegments: 3 });
+      geo.center();
+      geo.computeVertexNormals();
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.castShadow = true; mesh.receiveShadow = true;
+      return mesh;
+    }
+
+    function box(w, h, d, mat, radius = .05) { return roundedBox(w, h, d, radius, mat); }
+    function cylinder(r, h, mat, segments = 16) {
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, segments), mat);
+      m.castShadow = true; m.receiveShadow = true; return m;
+    }
+
+    const moduleDefs = [];
+    const moduleByKey = {};
+    const allFrameMeshes = [];
+    const allLouverMeshes = [];
+    const glassMeshes = [];
+    const ledMeshes = [];
+    const decorativeGroups = [];
+    let furnitureGroup, kitchenGroup, blindGroup, sensorGroup;
+
+    function createModule(key, name, enter, explode) {
+      const g = new THREE.Group();
+      g.userData = { key, name, enter: new THREE.Vector3(...enter), explode: new THREE.Vector3(...explode), finalPosition: new THREE.Vector3() };
+      model.add(g);
+      moduleDefs.push(g); moduleByKey[key] = g;
+      return g;
+    }
+
+    const dimensions = { w: 8.2, d: 5.5, h: 4.4 };
+    const { w: W, d: D, h: H } = dimensions;
+
+    // 1 Foundation plates
+    const foundation = createModule('foundation', 'Ground foundation plates', [-18, -8, 12], [-2.6, -1.8, 0]);
+    [[-W/2,-D/2],[W/2,-D/2],[-W/2,D/2],[W/2,D/2]].forEach(([x,z]) => {
+      const plate = box(.9, .12, .9, materials.dark, .12); plate.position.set(x, .06, z); foundation.add(plate);
+      const cap = box(.58, .08, .58, materials.frame, .08); cap.position.set(x, .16, z); foundation.add(cap); allFrameMeshes.push(cap);
+      for (let ax = -1; ax <= 1; ax += 2) for (let az = -1; az <= 1; az += 2) {
+        const bolt = cylinder(.055, .08, materials.dark, 16); bolt.position.set(x + ax*.29, .18, z + az*.29); foundation.add(bolt);
+      }
+    });
+
+    // 2 Columns with inner detail grooves
+    const columns = createModule('columns', 'Four structural aluminum columns', [0, 11, -18], [-1.6, -.2, 0]);
+    [[-W/2,-D/2],[W/2,-D/2],[-W/2,D/2],[W/2,D/2]].forEach(([x,z]) => {
+      const post = box(.46, H, .46, materials.frame, .09); post.position.set(x, H/2 + .22, z); columns.add(post); allFrameMeshes.push(post);
+      const groove1 = box(.03, H-.25, .33, materials.dark, .01); groove1.position.set(x + (x < 0 ? .235 : -.235), H/2 + .22, z); columns.add(groove1);
+      const footTrim = box(.62, .18, .62, materials.frame, .08); footTrim.position.set(x, .3, z); columns.add(footTrim); allFrameMeshes.push(footTrim);
+    });
+
+    // 3 Main beams
+    const beams = createModule('beams', 'Main horizontal beams', [20, 4, 0], [0, .3, 2.3]);
+    const beamY = H + .22;
+    [
+      [0, beamY, -D/2, W + .6, .52, .52], [0, beamY, D/2, W + .6, .52, .52],
+      [-W/2, beamY, 0, .52, .52, D + .6], [W/2, beamY, 0, .52, .52, D + .6]
+    ].forEach(([x,y,z,w,h,d]) => { const m = box(w,h,d,materials.frame,.11); m.position.set(x,y,z); beams.add(m); allFrameMeshes.push(m); });
+    // beam end caps
+    [[-W/2-.27,-D/2], [W/2+.27,-D/2], [-W/2-.27,D/2], [W/2+.27,D/2]].forEach(([x,z]) => {
+      const end = box(.08,.42,.42,materials.dark,.03); end.position.set(x, beamY, z); beams.add(end);
+    });
+
+    // 4 Internal support rails
+    const rails = createModule('rails', 'Internal support rails', [-17, 2, -13], [0, 1.2, -1.8]);
+    const railCount = 5;
+    for (let i = 0; i < railCount; i++) {
+      const z = -D/2 + .72 + i * ((D-1.44)/(railCount-1));
+      const rail = box(W-.72, .18, .18, materials.dark, .04); rail.position.set(0, H+.38, z); rails.add(rail);
+      const trim = box(W-.8, .06, .26, materials.frame, .03); trim.position.set(0, H+.49, z); rails.add(trim); allFrameMeshes.push(trim);
+    }
+
+    // 5 Individual louvers
+    const louvers = createModule('louvers', 'Individual roof louvers', [0, 16, 0], [0, 2.7, 0]);
+    const louverPivotGroup = new THREE.Group(); louvers.add(louverPivotGroup);
+    const louverCount = 18;
+    for (let i = 0; i < louverCount; i++) {
+      const z = -D/2 + .38 + i * ((D-.76)/(louverCount-1));
+      const pivot = new THREE.Group(); pivot.position.set(0, H+.61, z);
+      const blade = box(W-.78, .12, .31, materials.louver, .055); blade.position.y = .02; pivot.add(blade); allLouverMeshes.push(blade);
+      const underside = box(W-.96, .035, .19, materials.dark, .025); underside.position.y = -.075; pivot.add(underside);
+      const pinL = cylinder(.065,.28,materials.dark,18); pinL.rotation.z = Math.PI/2; pinL.position.x = -(W-.7)/2; pivot.add(pinL);
+      const pinR = pinL.clone(); pinR.position.x *= -1; pivot.add(pinR);
+      pivot.userData.baseRot = 0;
+      louverPivotGroup.add(pivot);
+    }
+
+    // 6 Hidden motor system
+    const motor = createModule('motor', 'Hidden motor system', [14, -4, 15], [3.5, 1.6, 0]);
+    const motorHousing = box(1.48,.38,.48,materials.dark,.12); motorHousing.position.set(W/2-.8,H+.38,-D/2+.18); motor.add(motorHousing);
+    const motorCore = cylinder(.15,.82,materials.terracotta,28); motorCore.rotation.z = Math.PI/2; motorCore.position.set(W/2-.8,H+.38,-D/2+.18); motor.add(motorCore);
+    const driveRod = cylinder(.035,D-.9,materials.dark,16); driveRod.rotation.x = Math.PI/2; driveRod.position.set(W/2-.56,H+.58,0); motor.add(driveRod);
+    for (let i=0;i<6;i++) { const gear = cylinder(.11,.045,materials.terracotta,18); gear.rotation.x=Math.PI/2; gear.position.set(W/2-.56,H+.58,-D/2+.5+i*(D-1)/5); motor.add(gear); }
+
+    // 7 Integrated gutters
+    const gutters = createModule('gutters', 'Integrated rain gutters', [-19, 7, 12], [0, -.5, 3.3]);
+    [-D/2,D/2].forEach(z => {
+      const gutter = box(W+.16,.24,.38,materials.dark,.08); gutter.position.set(0,H+.05,z); gutters.add(gutter);
+      const inner = box(W-.12,.08,.19,materials.frame,.03); inner.position.set(0,H+.14,z); gutters.add(inner); allFrameMeshes.push(inner);
+    });
+    [[-W/2,-D/2],[-W/2,D/2],[W/2,-D/2],[W/2,D/2]].forEach(([x,z]) => {
+      const pipe = cylinder(.07,H-.3,materials.dark,18); pipe.position.set(x + (x<0?.16:-.16),H/2,z + (z<0?.16:-.16)); gutters.add(pipe);
+    });
+
+    // 8 Sliding glass walls
+    const glass = createModule('glass', 'Sliding glass walls', [0, 2, 22], [0, 0, 4.3]);
+    function makeGlassPanel(x,y,z,w,h,rotY=0) {
+      const group = new THREE.Group();
+      const panel = box(w,h,.06,materials.glass,.035); group.add(panel);
+      const top = box(w+.08,.055,.1,materials.dark,.02); top.position.y=h/2+.02; group.add(top);
+      const bottom = top.clone(); bottom.position.y=-h/2-.02; group.add(bottom);
+      const sideL = box(.055,h,.1,materials.dark,.02); sideL.position.x=-w/2-.02; group.add(sideL);
+      const sideR = sideL.clone(); sideR.position.x=w/2+.02; group.add(sideR);
+      group.position.set(x,y,z); group.rotation.y=rotY; group.userData.closedPosition = group.position.clone();
+      glassMeshes.push(group); glass.add(group); return group;
+    }
+    const panelH = H-.55, panelW = W/4-.16;
+    for(let i=0;i<4;i++) makeGlassPanel(-W/2+panelW/2+.14+i*panelW, panelH/2+.28, D/2-.08, panelW-.06, panelH, 0);
+    const sidePW = D/3-.18;
+    for(let i=0;i<3;i++) makeGlassPanel(W/2-.08, panelH/2+.28, -D/2+sidePW/2+.14+i*sidePW, sidePW-.06, panelH, Math.PI/2);
+
+    // 9 Linear LED lights
+    const lights = createModule('lights', 'Linear LED lights', [18, 12, -5], [0, 1.2, -3]);
+    [-D/2+.38,D/2-.38].forEach(z => {
+      const channel = box(W-.95,.055,.08,materials.dark,.02); channel.position.set(0,H+.18,z); lights.add(channel);
+      const led = box(W-1.08,.026,.038,materials.led,.012); led.position.set(0,H+.14,z); lights.add(led); ledMeshes.push(led);
+    });
+    [-W/2+.38,W/2-.38].forEach(x => {
+      const channel = box(.08,.055,D-1.05,materials.dark,.02); channel.position.set(x,H+.18,0); lights.add(channel);
+      const led = box(.038,.026,D-1.18,materials.led,.012); led.position.set(x,H+.14,0); lights.add(led); ledMeshes.push(led);
+    });
+
+    // 10 Furniture
+    furnitureGroup = createModule('furniture', 'Outdoor furniture', [13, -2, -16], [2.2, 0, -2.6]);
+    function createSofa() {
+      const g = new THREE.Group();
+      const base = box(3.35,.34,1.25,materials.wood,.12); base.position.y=.34; g.add(base);
+      const seat = box(3.0,.32,1.05,materials.fabric,.16); seat.position.set(0,.67,0); g.add(seat);
+      const back = box(3.0,.9,.25,materials.fabric,.13); back.position.set(0,1.12,.44); back.rotation.x=-.12; g.add(back);
+      [-1.15,0,1.15].forEach(x=>{ const line=box(.04,.34,1.08,materials.dark,.01); line.position.set(x,.67,0); g.add(line); });
+      return g;
+    }
+    const sofa = createSofa(); sofa.position.set(-1.1,0,1.6); furnitureGroup.add(sofa);
+    const chair = createSofa(); chair.scale.set(.48,1,.82); chair.rotation.y=-Math.PI/2; chair.position.set(2.45,0,.4); furnitureGroup.add(chair);
+    const tableTop = cylinder(.72,.16,materials.terracotta,40); tableTop.position.set(.4,.65,.1); furnitureGroup.add(tableTop);
+    const tableLeg = cylinder(.12,.62,materials.dark,24); tableLeg.position.set(.4,.32,.1); furnitureGroup.add(tableLeg);
+    const rug = new THREE.Mesh(new THREE.CircleGeometry(2.25,64), new THREE.MeshStandardMaterial({color:0xbcae96,roughness:1,transparent:true,opacity:.92})); rug.rotation.x=-Math.PI/2; rug.position.set(.35,.035,.3); rug.receiveShadow=true; furnitureGroup.add(rug);
+
+    // 11 Planters and landscaping
+    const landscape = createModule('landscape', 'Planters and landscaping', [-15, -5, 18], [-2.6, 0, 2.4]);
+    function addPlanter(x,z,s=1) {
+      const g = new THREE.Group();
+      const pot = cylinder(.45*s,.82*s,materials.terracotta,28); pot.position.y=.41*s; g.add(pot);
+      const soil = cylinder(.38*s,.05*s,materials.soil,28); soil.position.y=.82*s; g.add(soil);
+      for(let i=0;i<9;i++) {
+        const stem = cylinder(.018*s,(.6+Math.random()*.5)*s,materials.dark,10); stem.position.set((Math.random()-.5)*.22*s,1.1*s,(Math.random()-.5)*.22*s); stem.rotation.z=(Math.random()-.5)*.35; g.add(stem);
+        const leaf = new THREE.Mesh(new THREE.SphereGeometry((.18+Math.random()*.1)*s,12,8),materials.leaf); leaf.scale.set(.55,1.8,.26); leaf.position.set(stem.position.x+(Math.random()-.5)*.3*s,1.55*s+Math.random()*.25*s,stem.position.z+(Math.random()-.5)*.3*s); leaf.rotation.set(Math.random(),Math.random(),Math.random()); leaf.castShadow=true; g.add(leaf);
+      }
+      g.position.set(x,0,z); landscape.add(g); decorativeGroups.push(g);
+    }
+    addPlanter(-W/2-.85,-D/2+.2,1.05); addPlanter(W/2+.95,D/2-.5,.9); addPlanter(-W/2-.65,D/2+.55,.72);
+
+    // 12 Control panel and sensors
+    sensorGroup = createModule('sensors', 'Control panel and sensors', [17, 7, 17], [3, .8, 2.6]);
+    const panelBody = box(.56,.9,.11,materials.blackGlass,.09); panelBody.position.set(W/2-.255,1.6,-D/2+.62); panelBody.rotation.y=-Math.PI/2; sensorGroup.add(panelBody);
+    const screen = box(.36,.55,.02,materials.led,.05); screen.material = screen.material.clone(); screen.material.emissiveIntensity=.45; screen.position.set(W/2-.315,1.62,-D/2+.62); screen.rotation.y=-Math.PI/2; sensorGroup.add(screen);
+    const sensorPole = cylinder(.05,.58,materials.dark,18); sensorPole.position.set(W/2-.55,H+.8,-D/2+.3); sensorGroup.add(sensorPole);
+    const sensorHead = new THREE.Mesh(new THREE.SphereGeometry(.16,20,14),materials.blackGlass); sensorHead.position.set(W/2-.55,H+1.1,-D/2+.3); sensorHead.castShadow=true; sensorGroup.add(sensorHead);
+    const windCup = new THREE.Group(); windCup.position.set(W/2-.55,H+1.32,-D/2+.3); sensorGroup.add(windCup);
+    for(let i=0;i<3;i++){ const arm=box(.45,.025,.025,materials.dark,.01); arm.rotation.y=i*Math.PI*2/3; arm.position.x=Math.cos(i*Math.PI*2/3)*.16; arm.position.z=Math.sin(i*Math.PI*2/3)*.16; windCup.add(arm); const cup=cylinder(.07,.11,materials.dark,16); cup.rotation.z=Math.PI/2; cup.position.set(Math.cos(i*Math.PI*2/3)*.42,0,Math.sin(i*Math.PI*2/3)*.42); windCup.add(cup); }
+    sensorGroup.userData.windCup = windCup;
+
+    // Optional outdoor kitchen and blind system
+    kitchenGroup = new THREE.Group();
+    const kBase = box(2.35,1.05,.78,materials.dark,.12); kBase.position.set(-2.6,.53,-D/2+.62); kitchenGroup.add(kBase);
+    const kTop = box(2.55,.11,.94,materials.louver,.07); kTop.position.set(-2.6,1.1,-D/2+.62); kitchenGroup.add(kTop);
+    const grill = box(.82,.05,.5,materials.blackGlass,.03); grill.position.set(-2.9,1.17,-D/2+.62); kitchenGroup.add(grill);
+    for(let i=0;i<4;i++){ const slot=box(.09,.02,.55,materials.dark,.01); slot.position.set(-3.22+i*.22,1.2,-D/2+.62); kitchenGroup.add(slot); }
+    kitchenGroup.visible = false; model.add(kitchenGroup);
+
+    blindGroup = new THREE.Group();
+    const blind = box(W-.85, H-.5, .035, new THREE.MeshStandardMaterial({color:0x72776f,roughness:.92,transparent:true,opacity:.83}), .03);
+    blind.position.set(0,(H-.5)/2+.3,-D/2+.11); blindGroup.add(blind);
+    for(let i=0;i<18;i++){ const seam=box(W-.95,.012,.018,materials.dark,.005); seam.position.set(0,.38+i*((H-.75)/17),-D/2+.09); blindGroup.add(seam); }
+    blindGroup.visible=false; model.add(blindGroup);
+
+    // Rain particle system
+    const rainCount = isMobile ? 400 : 800;
+    const rainGeo = new THREE.BufferGeometry();
+    const rainPos = new Float32Array(rainCount*3);
+    for(let i=0;i<rainCount;i++){ rainPos[i*3]=(Math.random()-.5)*28; rainPos[i*3+1]=Math.random()*18; rainPos[i*3+2]=(Math.random()-.5)*22; }
+    rainGeo.setAttribute('position',new THREE.BufferAttribute(rainPos,3));
+    const rainMat = new THREE.PointsMaterial({color:0xc8e3ed,size:.035,transparent:true,opacity:0,depthWrite:false});
+    const rain = new THREE.Points(rainGeo,rainMat); rain.position.x=3; scene.add(rain);
+
+    // Gutter water glow
+    const waterMat = new THREE.MeshBasicMaterial({color:0x7bb8cb,transparent:true,opacity:0});
+    const waterLine1 = box(W-.2,.035,.06,waterMat,.01); waterLine1.position.set(0,H+.19,-D/2); model.add(waterLine1);
+    const waterLine2 = waterLine1.clone(); waterLine2.position.z=D/2; model.add(waterLine2);
+    const gutterDrops = new THREE.Group(); model.add(gutterDrops);
+    [[-W/2,-D/2],[-W/2,D/2],[W/2,-D/2],[W/2,D/2]].forEach(([x,z],i)=>{
+      const drop = cylinder(.045,.34,waterMat,12);
+      drop.position.set(x + (x<0?.16:-.16), H-.4-i*.6, z + (z<0?.16:-.16));
+      drop.userData.offset=i*.9; gutterDrops.add(drop);
+    });
+
+    // Finalize transforms and starting rotations
+    moduleDefs.forEach((g, i) => {
+      g.userData.finalPosition.copy(g.position);
+      g.userData.finalRotation = g.rotation.clone();
+      g.visible = true;
+    });
+
+    let assemblyTL = null;
+    let exploded = false;
+    let louverOpen = true;
+    let currentMode = 'day';
+    let glassOpen = true;
+    let sceneEnabled = true;
+    let currentExplodeProgress = 0;
+    let postAssemblyTimers = [];
+    function clearPostAssemblyTimers(){ postAssemblyTimers.forEach(t=>t && t.kill && t.kill()); postAssemblyTimers=[]; }
+
+    const assemblyName = document.getElementById('assemblyName');
+    const assemblyPercent = document.getElementById('assemblyPercent');
+    const progressFill = document.getElementById('progressFill');
+    const metaAssembly = document.getElementById('metaAssembly');
+    const roofStatus = document.getElementById('roofStatus');
+    const weatherStatus = document.getElementById('weatherStatus');
+
+    function setAssemblyProgress(value, name) {
+      const p = Math.round(value);
+      assemblyPercent.textContent = p + '%';
+      metaAssembly.textContent = p + '%';
+      progressFill.style.width = p + '%';
+      if (name) assemblyName.textContent = name;
+    }
+
+    function resetModulesToFinal() {
+      moduleDefs.forEach(g => {
+        gsap.killTweensOf(g.position); gsap.killTweensOf(g.rotation); gsap.killTweensOf(g.scale);
+        g.position.copy(g.userData.finalPosition);
+        g.rotation.copy(g.userData.finalRotation);
+        g.scale.set(1,1,1);
+        g.visible = true;
+      });
+    }
+
+    function lockImpact(group) {
+      gsap.fromTo(group.scale,{x:.975,y:.975,z:.975},{x:1,y:1,z:1,duration:.42,ease:'elastic.out(1,.35)'});
+    }
+
+    function runAssembly() {
+      if (assemblyTL) assemblyTL.kill();
+      clearPostAssemblyTimers();
+      model.scale.set(1,1,1);
+      model.rotation.set(0,0,0);
+      exploded = false;
+      currentExplodeProgress = 0;
+      louverOpen = false;
+      setWeather('day', true);
+      setLouvers(0, 0);
+      setGlass(false, 0);
+      setLED(false, 0);
+
+      moduleDefs.forEach((g, i) => {
+        const e = g.userData.enter;
+        g.position.set(e.x,e.y,e.z);
+        g.rotation.set((i%3-.8)*1.4,(i%4-.9)*1.2,(i%5-.8)*.55);
+        g.scale.set(.86,.86,.86);
+        g.visible = true;
+      });
+
+      const total = moduleDefs.length;
+      assemblyTL = gsap.timeline({ delay: reducedMotion ? 0 : .55, defaults:{ overwrite:'auto' } });
+      moduleDefs.forEach((g,i)=>{
+        const at = reducedMotion ? 0 : i * .44;
+        const duration = reducedMotion ? .01 : 1.15;
+        assemblyTL.call(()=>setAssemblyProgress((i/total)*100,g.userData.name),null,at)
+          .to(g.position,{x:0,y:0,z:0,duration,ease:'power3.out'},at)
+          .to(g.rotation,{x:0,y:0,z:0,duration,ease:'power3.out'},at)
+          .to(g.scale,{x:1,y:1,z:1,duration:.8,ease:'power2.out'},at)
+          .call(()=>{ lockImpact(g); setAssemblyProgress(((i+1)/total)*100,g.userData.name); },null,at+duration-.08);
+      });
+      assemblyTL.to(camera.position,{x:isMobile?11.8:12.2,y:isMobile?8.4:6.8,z:isMobile?15.6:16.2,duration:1.8,ease:'power2.inOut',onUpdate:()=>camera.lookAt(cameraTarget)}, total*.44+.45)
+        .call(()=>setAssemblyProgress(100,'Assembly complete'))
+        .call(()=>setLouvers(68,1.8),null,'+=.2')
+        .call(()=>setGlass(true,1.4),null,'-=1.2')
+        .call(()=>setLED(true,1.2),null,'-=.7')
+        .call(()=>setWeather('sunset',true),null,'+=.4')
+        .call(()=>{
+          if (!reducedMotion) {
+            setWeather('rain',true);
+            postAssemblyTimers.push(gsap.delayedCall(2.6,()=>{ setLouvers(0,1.3); setGlass(false,1.2); }));
+            postAssemblyTimers.push(gsap.delayedCall(5.5,()=>{ setWeather('sunset',true); setLouvers(38,1.5); setGlass(true,1.3); }));
+          }
+        },null,'+=2.0');
+    }
+
+    function setLouvers(angleDeg, duration=.9) {
+      const angle = THREE.MathUtils.degToRad(angleDeg);
+      louverOpen = angleDeg > 5;
+      louverPivotGroup.children.forEach((p,i)=>gsap.to(p.rotation,{x:angle,duration,delay:i*.012,ease:'power3.inOut'}));
+      roofStatus.textContent = louverOpen ? 'Open' : 'Closed';
+      document.getElementById('roofAngleReadout').textContent = Math.round(angleDeg)+'°';
+    }
+
+    function setGlass(open, duration=.9) {
+      glassOpen = open;
+      glassMeshes.forEach((g,i)=>{
+        const closed = g.userData.closedPosition;
+        let tx=closed.x, tz=closed.z;
+        if (Math.abs(g.rotation.y) < .1) tx = open ? closed.x + (i%4-1.5)*1.05 : closed.x;
+        else tz = open ? closed.z + (i%3-1)*1.15 : closed.z;
+        gsap.to(g.position,{x:tx,z:tz,duration,delay:i*.035,ease:'power3.inOut'});
+      });
+      document.getElementById('glassReadout').textContent = open ? 'Open' : 'Closed';
+    }
+
+    function setLED(on, duration=.8) {
+      ledMeshes.forEach((m,i)=>gsap.to(m.material,{emissiveIntensity:on?4.4:0,duration,delay:i*.04,ease:'power2.inOut'}));
+      gsap.to(warmPoint,{intensity:on?32:0,duration});
+      document.getElementById('ledReadout').textContent = on ? 'Warm scene' : 'Off';
+    }
+
+    function setWeather(mode, internal=false) {
+      currentMode = mode;
+      document.querySelectorAll('[data-mode]').forEach(b=>{
+        if (b.matches('.env-btn') || b.closest('#weatherTabs')) b.classList.toggle('active',b.dataset.mode===mode);
+      });
+      let bg=0xddd6c8, fog=0xddd6c8, exposure=1.08, sunColor=0xffe0b1, sunIntensity=4.2, rainOpacity=0, wind='8 km/h';
+      if(mode==='sunset'){ bg=0xc88769; fog=0xc88769; exposure=.96; sunColor=0xffb06d; sunIntensity=5.2; setLED(true,1); setLouvers(42,1); setGlass(true,1); wind='5 km/h'; }
+      if(mode==='rain'){ bg=0x77858b; fog=0x77858b; exposure=.73; sunColor=0xa9c6d2; sunIntensity=1.05; rainOpacity=.72; setLED(true,1); setLouvers(0,1.1); setGlass(false,1); wind='32 km/h'; gsap.to(waterMat,{opacity:.78,duration:1}); }
+      else gsap.to(waterMat,{opacity:0,duration:.7});
+      if(mode==='wind'){ bg=0x9aa5a4; fog=0x9aa5a4; exposure=.85; sunColor=0xd7e3e5; sunIntensity=2; setLouvers(0,1); setGlass(false,1); wind='78 km/h'; }
+      if(mode==='night'){ bg=0x1e292b; fog=0x1e292b; exposure=.62; sunColor=0x7f9ca6; sunIntensity=.25; setLED(true,1); setLouvers(22,1); setGlass(true,1); wind='11 km/h'; }
+      if(mode==='day'){ setLED(false,.8); setLouvers(68,1.1); setGlass(true,1); }
+      gsap.to(scene.background,{r:new THREE.Color(bg).r,g:new THREE.Color(bg).g,b:new THREE.Color(bg).b,duration:1.2});
+      gsap.to(scene.fog.color,{r:new THREE.Color(fog).r,g:new THREE.Color(fog).g,b:new THREE.Color(fog).b,duration:1.2});
+      gsap.to(renderer,{toneMappingExposure:exposure,duration:1.2});
+      gsap.to(sunLight.color,{r:new THREE.Color(sunColor).r,g:new THREE.Color(sunColor).g,b:new THREE.Color(sunColor).b,duration:1.1});
+      gsap.to(sunLight,{intensity:sunIntensity,duration:1.1});
+      gsap.to(rainMat,{opacity:rainOpacity,duration:1});
+      weatherStatus.textContent = mode.charAt(0).toUpperCase()+mode.slice(1);
+      document.getElementById('windReadout').textContent = wind;
+      if(!internal) setAssemblyProgress(100,'System mode: '+mode);
+    }
+
+    function setExplodedState(active) {
+      exploded = active;
+      moduleDefs.forEach((g,i)=>{
+        const v = g.userData.explode;
+        gsap.to(g.position,{x:active?v.x:0,y:active?v.y:0,z:active?v.z:0,duration:1.25,delay:i*.025,ease:'power3.inOut'});
+      });
+      gsap.to(model.rotation,{y:active?-.16:0,duration:1.2,ease:'power3.inOut'});
+      document.getElementById('explodeBtn').classList.toggle('active',active);
+      setAssemblyProgress(100,active?'Exploded structural view':'Assembly complete');
+    }
+
+    document.getElementById('replayBtn').addEventListener('click',runAssembly);
+    document.getElementById('explodeBtn').addEventListener('click',()=>{clearPostAssemblyTimers();if(assemblyTL)assemblyTL.kill();resetModulesToFinal();model.scale.set(1,1,1);setExplodedState(!exploded);});
+    document.getElementById('louverBtn').addEventListener('click',()=>setLouvers(louverOpen?0:68,1));
+    document.querySelectorAll('.env-btn').forEach(btn=>btn.addEventListener('click',()=>{clearPostAssemblyTimers();setWeather(btn.dataset.mode);}));
+    document.querySelectorAll('#weatherTabs button').forEach(btn=>btn.addEventListener('click',()=>{clearPostAssemblyTimers();setWeather(btn.dataset.mode);}));
+
+    // Configurator
+    const configState = { size:'4x6', frame:'aluminum', louver:'limestone', glass:true, led:true, kitchen:false, blinds:false, rainSensor:true, windSensor:true };
+    const sizeMap = {
+      '3x3':{label:'3 × 3 m',area:9,scale:[.72,1,.58],price:[190,280],type:'AL-180 Compact',time:'20–24 ngày'},
+      '4x6':{label:'4 × 6 m',area:24,scale:[1,1,1],price:[420,520],type:'AL-240 Villa',time:'24–30 ngày'},
+      '6x8':{label:'6 × 8 m',area:48,scale:[1.22,1.07,1.28],price:[720,980],type:'AL-320 Project',time:'30–38 ngày'}
+    };
+    function updateConfigurator() {
+      const d=sizeMap[configState.size];
+      gsap.to(model.scale,{x:d.scale[0],y:d.scale[1],z:d.scale[2],duration:1,ease:'power3.inOut'});
+      const frameColor=palette[configState.frame];
+      const louverColor=palette[configState.louver];
+      gsap.to(materials.frame.color,{r:new THREE.Color(frameColor).r,g:new THREE.Color(frameColor).g,b:new THREE.Color(frameColor).b,duration:.7});
+      gsap.to(materials.louver.color,{r:new THREE.Color(louverColor).r,g:new THREE.Color(louverColor).g,b:new THREE.Color(louverColor).b,duration:.7});
+      glass.visible=configState.glass;
+      lights.visible=configState.led;
+      kitchenGroup.visible=configState.kitchen;
+      blindGroup.visible=configState.blinds;
+      sensorGroup.visible=configState.rainSensor||configState.windSensor;
+      setLED(configState.led && (currentMode==='sunset'||currentMode==='night'||currentMode==='rain'),.5);
+      let add=0; if(configState.glass)add+=70; if(configState.led)add+=18; if(configState.kitchen)add+=120; if(configState.blinds)add+=45; if(configState.rainSensor)add+=8; if(configState.windSensor)add+=12;
+      document.getElementById('sizeLabel').textContent=d.label;
+      document.getElementById('summarySize').textContent=d.label;
+      document.getElementById('summaryArea').textContent=d.area+' m²';
+      document.getElementById('summaryType').textContent=d.type;
+      document.getElementById('summaryTime').textContent=d.time;
+      document.getElementById('configPrice').textContent=(d.price[0]+Math.round(add*.7))+'–'+(d.price[1]+add)+' triệu VND';
+    }
+    document.querySelectorAll('#sizeOptions button').forEach(btn=>btn.addEventListener('click',()=>{
+      document.querySelectorAll('#sizeOptions button').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); configState.size=btn.dataset.size; updateConfigurator();
+    }));
+    document.querySelectorAll('#frameSwatches .swatch').forEach(btn=>btn.addEventListener('click',()=>{
+      document.querySelectorAll('#frameSwatches .swatch').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); configState.frame=btn.dataset.color; document.getElementById('frameColorLabel').textContent=btn.dataset.label; updateConfigurator();
+    }));
+    document.querySelectorAll('#louverSwatches .swatch').forEach(btn=>btn.addEventListener('click',()=>{
+      document.querySelectorAll('#louverSwatches .swatch').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); configState.louver=btn.dataset.color; document.getElementById('louverColorLabel').textContent=btn.dataset.label; updateConfigurator();
+    }));
+    document.querySelectorAll('#featureOptions input').forEach(input=>input.addEventListener('change',()=>{configState[input.dataset.feature]=input.checked; updateConfigurator();}));
+
+    // Estimate builder
+    const estimateControls = Array.from(document.querySelectorAll('#estimateForm select, #estimateForm input'));
+    function calculateEstimate(){
+      const type=document.getElementById('projectType').value;
+      const size=document.getElementById('estimateSize').value;
+      const walls=+document.getElementById('glassWalls').value;
+      const light=document.getElementById('lightingPackage').value;
+      const sensor=document.getElementById('sensorPackage').value;
+      const kitchen=document.getElementById('estimateKitchen').checked;
+      const blinds=document.getElementById('estimateBlinds').checked;
+      const location=document.getElementById('location').value;
+      const base={small:[180,280],medium:[320,550],large:[600,980]}[size].slice();
+      const typeMul={villa:1,cafe:1.12,resort:1.24}[type];
+      let add=walls*32+(light==='basic'?18:light==='scene'?38:0)+(sensor==='full'?18:8)+(kitchen?110:0)+(blinds?55:0);
+      const locMul={central:1,south:1.04,north:1.06,island:1.17}[location];
+      const low=Math.round((base[0]*typeMul+add*.72)*locMul/10)*10;
+      const high=Math.round((base[1]*typeMul+add)*locMul/10)*10;
+      document.getElementById('estimateRange').textContent=(high>=1000?(low/1000).toFixed(low%1000?1:0)+'–'+(high/1000).toFixed(1)+' tỷ VND':low+'–'+high+' triệu VND');
+    }
+    estimateControls.forEach(c=>c.addEventListener('change',calculateEstimate));
+    calculateEstimate();
+
+    // Scroll choreography
+    gsap.to('.hero-title .line span',{y:'0%',duration:1.25,stagger:.11,ease:'power4.out',delay:.18});
+    gsap.to('.hero-italic span',{y:'0%',duration:1.1,ease:'power4.out',delay:.62});
+    gsap.from('.hero-copy p, .hero-actions, .hero-kicker',{opacity:0,y:18,duration:.9,stagger:.1,ease:'power3.out',delay:.72});
+
+    const explodeTexts=[
+      ['01','Foundation & columns','Bản mã liên kết nền và hệ trụ nhôm định hình chịu lực.'],
+      ['02','Primary frame','Dầm chính, ray đỡ và liên kết cơ khí tạo khẩu độ lớn.'],
+      ['03','Rotating roof','Từng lá mái xoay độc lập trên trục đồng bộ chống rung.'],
+      ['04','Motor & drainage','Motor giấu kín, máng xối và đường nước nằm trong hệ kết cấu.'],
+      ['05','Glass & lighting','Vách kính trượt cùng LED tuyến tính hoàn thiện lớp tiện nghi.']
+    ];
+    ScrollTrigger.create({
+      trigger:'#system',start:'top top',end:'bottom bottom',scrub:true,
+      onEnter:()=>{clearPostAssemblyTimers();if(assemblyTL)assemblyTL.kill();document.body.dataset.scene='technical';sceneShell.classList.remove('is-hidden');model.scale.set(1,1,1);resetModulesToFinal();setWeather('day',true);},
+      onEnterBack:()=>{document.body.dataset.scene='technical';sceneShell.classList.remove('is-hidden');model.scale.set(1,1,1);},
+      onUpdate:self=>{
+        currentExplodeProgress=self.progress;
+        const p=self.progress;
+        moduleDefs.forEach((g,i)=>{ const v=g.userData.explode; const local=THREE.MathUtils.clamp((p-i*.025)/.8,0,1); g.position.set(v.x*local,v.y*local,v.z*local); });
+        model.rotation.y=-.22*p;
+        const idx=Math.min(explodeTexts.length-1,Math.floor(p*explodeTexts.length));
+        document.getElementById('explodeIndex').textContent=explodeTexts[idx][0];
+        document.getElementById('explodeTitle').textContent=explodeTexts[idx][1];
+        document.getElementById('explodeDesc').textContent=explodeTexts[idx][2];
+        document.querySelectorAll('.tech-label').forEach((el,i)=>el.classList.toggle('active',i===Math.min(7,Math.floor(p*8))));
+      },
+      onLeaveBack:()=>{document.body.dataset.scene='hero'; resetModulesToFinal(); model.rotation.y=0;}
+    });
+
+    ScrollTrigger.create({
+      trigger:'#weather',start:'top 55%',end:'bottom 35%',
+      onEnter:()=>{document.body.dataset.scene='weather';sceneShell.classList.remove('is-hidden');resetModulesToFinal();model.rotation.y=.08;model.scale.set(1,1,1);setWeather('day',true);},
+      onEnterBack:()=>{document.body.dataset.scene='weather';sceneShell.classList.remove('is-hidden');model.scale.set(1,1,1);model.rotation.y=.08;setWeather('day',true);},
+      onLeaveBack:()=>{document.body.dataset.scene='technical';}
+    });
+
+    ScrollTrigger.create({
+      trigger:'#configurator',start:'top 55%',end:'bottom 35%',
+      onEnter:()=>{document.body.dataset.scene='config';sceneShell.classList.remove('is-hidden');resetModulesToFinal();model.rotation.y=-.08;updateConfigurator();},
+      onEnterBack:()=>{document.body.dataset.scene='config';sceneShell.classList.remove('is-hidden');updateConfigurator();},
+      onLeaveBack:()=>{document.body.dataset.scene='weather';}
+    });
+
+    ScrollTrigger.create({trigger:'#applications',start:'top 70%',end:'bottom top',onEnter:()=>sceneShell.classList.add('is-hidden'),onEnterBack:()=>sceneShell.classList.add('is-hidden'),onLeaveBack:()=>sceneShell.classList.remove('is-hidden')});
+    ScrollTrigger.create({
+      trigger:'#contact',start:'top 70%',end:'bottom bottom',
+      onEnter:()=>{sceneShell.classList.remove('is-hidden');document.body.dataset.scene='final';resetModulesToFinal();model.scale.set(1.05,1.05,1.05);model.rotation.y=-.12;setWeather('sunset',true);setLouvers(48,1.4);setGlass(true,1.3);setLED(true,1);},
+      onEnterBack:()=>{sceneShell.classList.remove('is-hidden');document.body.dataset.scene='final';setWeather('sunset',true);setLouvers(48,1);setGlass(true,1);setLED(true,1);},
+      onLeaveBack:()=>sceneShell.classList.add('is-hidden')
+    });
+
+    gsap.utils.toArray('.app-scene').forEach(sceneEl=>{
+      const img=sceneEl.querySelector('img');
+      gsap.fromTo(img,{yPercent:-5},{yPercent:5,ease:'none',scrollTrigger:{trigger:sceneEl,start:'top bottom',end:'bottom top',scrub:true}});
+      gsap.from(sceneEl.querySelectorAll('.app-copy > *'),{y:42,opacity:0,stagger:.08,duration:1,ease:'power3.out',scrollTrigger:{trigger:sceneEl,start:'top 70%'}});
+    });
+    gsap.utils.toArray('.perf-bar span').forEach(bar=>gsap.to(bar,{width:bar.dataset.width,duration:1.4,ease:'power3.out',scrollTrigger:{trigger:bar,start:'top 85%'}}));
+    gsap.from('.perf-orbit',{scale:.68,opacity:0,duration:1.5,ease:'power3.out',scrollTrigger:{trigger:'.performance-map',start:'top 65%'}});
+
+    ScrollTrigger.create({
+      trigger:'#hero',start:'top top',end:'bottom top',scrub:true,
+      onUpdate:self=>{
+        if(document.body.dataset.scene==='hero'){
+          model.rotation.y=-.08+self.progress*.18;
+          camera.position.x=(isMobile?11.8:12.2)-self.progress*1.2;
+          camera.position.y=(isMobile?8.4:6.8)+self.progress*.45;
+          camera.lookAt(cameraTarget);
+        }
+      }
+    });
+
+    // Resize and rendering
+    function updateCameraForViewport(){
+      const mobile=window.innerWidth<=720;
+      camera.aspect=window.innerWidth/window.innerHeight;
+      camera.fov=mobile?39:34;
+      camera.updateProjectionMatrix();
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,mobile?1.5:2));
+      renderer.setSize(window.innerWidth,window.innerHeight,false);
+      if(document.body.dataset.scene==='hero'){
+        camera.position.set(mobile?11.8:12.2,mobile?8.4:6.8,mobile?15.6:16.2);
+        cameraTarget.set(mobile?1.8:1.7,mobile?2.7:2.2,0);
+        camera.lookAt(cameraTarget);
+      }
+      ScrollTrigger.refresh();
+    }
+    window.addEventListener('resize',updateCameraForViewport,{passive:true});
+
+    const clock=new THREE.Clock();
+    function render(){
+      const dt=Math.min(clock.getDelta(),.033);
+      const t=clock.elapsedTime;
+      if(sceneEnabled){
+        if(sensorGroup.userData.windCup) sensorGroup.userData.windCup.rotation.y += dt*(currentMode==='wind'?7:2.2);
+        decorativeGroups.forEach((g,i)=>{g.rotation.z=Math.sin(t*.55+i)*.012;});
+        gutterDrops.visible = rainMat.opacity > .03;
+        if(gutterDrops.visible){ gutterDrops.children.forEach((d,i)=>{ d.position.y = H - ((t*2.4+d.userData.offset)%(H-.7)); }); }
+        if(rainMat.opacity>.01){
+          const pos=rain.geometry.attributes.position.array;
+          for(let i=0;i<rainCount;i++){pos[i*3+1]-=dt*(currentMode==='wind'?17:12);pos[i*3]+=dt*(currentMode==='wind'?4:1.2);if(pos[i*3+1]<0){pos[i*3+1]=18;pos[i*3]=(Math.random()-.5)*28;}}
+          rain.geometry.attributes.position.needsUpdate=true;
+        }
+        if(!reducedMotion && document.body.dataset.scene==='hero' && (!assemblyTL || !assemblyTL.isActive())) model.position.y=Math.sin(t*.7)*.025;
+        renderer.render(scene,camera);
+      }
+      requestAnimationFrame(render);
+    }
+
+    document.addEventListener('visibilitychange',()=>{sceneEnabled=!document.hidden;});
+    render();
+    updateConfigurator();
+    if(reducedMotion){ resetModulesToFinal(); setAssemblyProgress(100,'Assembly complete'); setLouvers(68,0); setGlass(true,0); }
+    else runAssembly();
+  })();
+  </script>
+</body>
+</html>
